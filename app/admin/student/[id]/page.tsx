@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import QRCode from 'qrcode'
 import { Trash2 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import useSWR, { mutate } from 'swr'
 
 interface Student {
@@ -32,6 +33,8 @@ export default function StudentPage() {
   const [loginQR, setLoginQR] = useState('')
   const [password, setPassword] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [generatingPaymentQR, setGeneratingPaymentQR] = useState(false)
+  const [markingPaid, setMarkingPaid] = useState(false)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const params = useParams()
@@ -45,17 +48,21 @@ export default function StudentPage() {
 
   const generatePaymentQR = async () => {
     if (!student) return
+    setGeneratingPaymentQR(true)
     const upiLink = `upi://pay?pa=${process.env.NEXT_PUBLIC_UPI_ID || 'your_upi_id@bank'}&pn=Fest%20Photos&tr=${student.rollNo}&am=50.00`
     try {
       const qr = await QRCode.toDataURL(upiLink)
       setPaymentQR(qr)
     } catch (err) {
       console.error('Failed to generate QR')
+    } finally {
+      setGeneratingPaymentQR(false)
     }
   }
 
   const markAsPaid = async () => {
     if (!student) return
+    setMarkingPaid(true)
     try {
       const res = await fetch('/api/payment', {
         method: 'POST',
@@ -72,6 +79,8 @@ export default function StudentPage() {
       }
     } catch (err) {
       console.error('Failed to mark as paid')
+    } finally {
+      setMarkingPaid(false)
     }
   }
 
@@ -147,80 +156,85 @@ export default function StudentPage() {
   }
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+    return <div className="min-h-screen flex items-center justify-center animate-in fade-in-0 duration-300">Loading...</div>
   }
 
   if (!student) {
-    return <div className="min-h-screen flex items-center justify-center">Student not found</div>
+    return <div className="min-h-screen flex items-center justify-center animate-in fade-in-0 duration-300">Student not found</div>
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">{student.name} - {student.rollNo}</h1>
-          <div className="space-x-2">
-            <Button variant="outline" onClick={() => router.push('/admin/dashboard')}>
+    <div className="min-h-screen bg-gray-50 p-4 transition-all duration-300">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <h1 className="text-2xl font-bold animate-in slide-in-from-left-4 duration-500">{student.name} - {student.rollNo}</h1>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button variant="outline" onClick={() => router.push('/admin/dashboard')} className="transition-all duration-200 hover:scale-105 active:scale-95">
               Back to Dashboard
             </Button>
-            <Button onClick={() => { document.cookie = 'admin-auth=; path=/; max-age=0'; router.push('/admin') }}>
+            <Button onClick={() => { document.cookie = 'admin-auth=; path=/; max-age=0'; router.push('/admin') }} className="transition-all duration-200 hover:scale-105 active:scale-95">
               Logout
             </Button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <Card>
+          <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
             <CardHeader>
               <CardTitle>Student Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
+              <div className="animate-in slide-in-from-left-4 duration-500 delay-200">
                 <p><strong>Name:</strong> {student.name}</p>
                 <p><strong>Roll No:</strong> {student.rollNo}</p>
-                <p><strong>Payment Status:</strong> <Badge variant={student.paymentStatus === 'PAID' ? 'default' : 'secondary'}>{student.paymentStatus}</Badge></p>
-                <p><strong>Photo Status:</strong> <Badge variant={student.photoStatus === 'Ready' ? 'default' : 'secondary'}>{student.photoStatus}</Badge></p>
+                <p><strong>Payment Status:</strong> <Badge variant={student.paymentStatus === 'PAID' ? 'default' : 'secondary'} className="transition-all duration-300">{student.paymentStatus}</Badge></p>
+                <p><strong>Photo Status:</strong> <Badge variant={student.photoStatus === 'Ready' ? 'default' : 'secondary'} className="transition-all duration-300">{student.photoStatus}</Badge></p>
               </div>
 
               {student.paymentStatus === 'UNPAID' && (
-                <div className="space-y-2">
-                  <Button onClick={generatePaymentQR}>Generate Payment QR</Button>
-                  {paymentQR && <img src={paymentQR} alt="Payment QR" className="max-w-xs" />}
+                <div className="space-y-2 animate-in fade-in-0 duration-500 delay-400">
+                  <Button onClick={generatePaymentQR} disabled={generatingPaymentQR} className="transition-all duration-200 hover:scale-105 active:scale-95">
+                    {generatingPaymentQR ? 'Generating...' : 'Generate Payment QR'}
+                  </Button>
+                  {paymentQR && <img src={paymentQR} alt="Payment QR" className="max-w-xs mx-auto animate-in zoom-in-95 duration-300" />}
                 </div>
               )}
 
               {student.paymentStatus === 'PAID' && (
-                <div className="space-y-2">
-                  <Button onClick={markAsPaid}>Generate Login QR</Button>
-                  {loginQR && <img src={loginQR} alt="Login QR" className="max-w-xs" />}
-                  {password && <p><strong>Password:</strong> {password}</p>}
+                <div className="space-y-2 animate-in fade-in-0 duration-500 delay-400">
+                  <Button onClick={markAsPaid} disabled={markingPaid} className="transition-all duration-200 hover:scale-105 active:scale-95">
+                    {markingPaid ? 'Generating...' : 'Generate Login QR'}
+                  </Button>
+                  {loginQR && <img src={loginQR} alt="Login QR" className="max-w-xs mx-auto animate-in zoom-in-95 duration-300" />}
+                  {password && <p className="animate-in slide-in-from-bottom-4 duration-300 delay-600"><strong>Password:</strong> {password}</p>}
                 </div>
               )}
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-200">
             <CardHeader>
               <CardTitle>Photo Management</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
+              <div className="animate-in slide-in-from-right-4 duration-500 delay-400">
                 <Input
                   type="file"
                   multiple
                   accept="image/*"
                   onChange={handleFileUpload}
                   disabled={uploading}
+                  className="transition-all duration-200 focus:scale-105"
                 />
-                {uploading && <p>Uploading...</p>}
+                {uploading && <p className="animate-in fade-in-0 duration-300">Uploading...</p>}
               </div>
 
-              <div>
+              <div className="animate-in slide-in-from-right-4 duration-500 delay-600">
                 <label className="block text-sm font-medium mb-2">Photo Status</label>
                 <select
                   value={student.photoStatus}
                   onChange={(e) => updatePhotoStatus(e.target.value)}
-                  className="w-full p-2 border rounded"
+                  className="w-full p-2 border rounded transition-all duration-200 focus:scale-105"
                 >
                   <option value="Pending">Pending</option>
                   <option value="Processing">Processing</option>
@@ -231,29 +245,52 @@ export default function StudentPage() {
           </Card>
         </div>
 
-        <Card>
+        <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-400">
           <CardHeader>
             <CardTitle>Photos ({photosData?.photos?.length || 0})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {photosData?.photos?.map((photo: Photo) => (
-                <div key={photo.id} className="relative">
-                  <img
-                    src={photo.url}
-                    alt={photo.name}
-                    className="w-full h-48 object-cover rounded"
-                  />
-                  <button
-                    onClick={() => deletePhoto(photo.id)}
-                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+            <motion.div
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: {
+                  opacity: 1,
+                  transition: {
+                    staggerChildren: 0.1
+                  }
+                }
+              }}
+            >
+              <AnimatePresence>
+                {photosData?.photos?.map((photo: Photo, index: number) => (
+                  <motion.div
+                    key={photo.id}
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    className="relative group"
                   >
-                    <Trash2 size={16} />
-                  </button>
-                  <p className="text-sm mt-2">{photo.name}</p>
-                </div>
-              ))}
-            </div>
+                    <img
+                      src={photo.url}
+                      alt={photo.name}
+                      className="w-full h-48 object-cover rounded transition-transform duration-300 group-hover:scale-105"
+                    />
+                    <button
+                      onClick={() => deletePhoto(photo.id)}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-all duration-200 hover:scale-110 opacity-0 group-hover:opacity-100"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                    <p className="text-sm mt-2 truncate">{photo.name}</p>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
           </CardContent>
         </Card>
       </div>

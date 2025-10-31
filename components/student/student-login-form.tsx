@@ -39,15 +39,15 @@ export default function StudentLoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-center text-2xl font-bold">Sankalp presents</CardTitle>
-          <CardTitle className="text-center text-xl">PhotoPocket 3.0</CardTitle>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4 transition-all duration-300">
+      <Card className="w-full max-w-md shadow-lg hover:shadow-xl transition-shadow duration-300 animate-in fade-in-0 zoom-in-95 duration-500">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold mb-2 animate-in slide-in-from-top-4 duration-700">Sankalp presents</CardTitle>
+          <CardTitle className="text-xl animate-in slide-in-from-bottom-4 duration-700 delay-200">PhotoPocket 3.0</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
+            <div className="animate-in slide-in-from-left-4 duration-500 delay-300">
               <label htmlFor="rollNo" className="block text-sm font-medium mb-1">Roll No</label>
               <Input
                 id="rollNo"
@@ -56,9 +56,10 @@ export default function StudentLoginForm() {
                 onChange={(e) => setRollNo(e.target.value)}
                 required
                 placeholder="Enter your roll number"
+                className="transition-all duration-200 focus:scale-105"
               />
             </div>
-            <div>
+            <div className="animate-in slide-in-from-right-4 duration-500 delay-500">
               <label htmlFor="password" className="block text-sm font-medium mb-1">Password</label>
               <Input
                 id="password"
@@ -67,10 +68,11 @@ export default function StudentLoginForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 placeholder="Enter your password"
+                className="transition-all duration-200 focus:scale-105"
               />
             </div>
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>
+            {error && <p className="text-red-500 text-sm animate-in fade-in-0 duration-300">{error}</p>}
+            <Button type="submit" className="w-full transition-all duration-200 hover:scale-105 active:scale-95" disabled={loading}>
               {loading ? 'Logging in...' : 'Login'}
             </Button>
           </form>

@@ -1,11 +1,12 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
-import { Download } from 'lucide-react'
+import { Download, Loader2 } from 'lucide-react'
 import useSWR from 'swr'
 
 interface Photo {
@@ -18,12 +19,19 @@ const fetcher = (url: string) => fetch(url).then(res => res.json())
 export default function PhotoGallery() {
   const { data, error, isLoading } = useSWR('/api/gallery', fetcher, { refreshInterval: 5000 })
   const router = useRouter()
+  const [downloading, setDownloading] = useState(false)
+  const [downloadProgress, setDownloadProgress] = useState('')
 
   const downloadAll = async () => {
+    setDownloading(true)
+    setDownloadProgress('')
     const zip = new JSZip()
     const folder = zip.folder('photos')
+    const photos = data?.photos || []
 
-    for (const photo of data?.photos || []) {
+    for (let i = 0; i < photos.length; i++) {
+      const photo = photos[i]
+      setDownloadProgress(`Zipping... ${i + 1}/${photos.length} photos...`)
       try {
         const response = await fetch(`${photo.url}?tr=f-orig`)
         const blob = await response.blob()
@@ -35,6 +43,8 @@ export default function PhotoGallery() {
 
     const zipBlob = await zip.generateAsync({ type: 'blob' })
     saveAs(zipBlob, 'photos.zip')
+    setDownloading(false)
+    setDownloadProgress('')
   }
 
   const handleDownload = async (photo: Photo) => {
@@ -55,7 +65,27 @@ export default function PhotoGallery() {
   }
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 transition-all duration-300">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+            <div className="h-8 bg-gray-200 rounded animate-pulse w-48"></div>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <div className="h-10 bg-gray-200 rounded animate-pulse w-32"></div>
+              <div className="h-10 bg-gray-200 rounded animate-pulse w-24"></div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="animate-pulse">
+                <div className="bg-gray-200 h-48 rounded mb-2"></div>
+                <div className="bg-gray-200 h-4 rounded w-3/4"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (error || !data) {
@@ -75,11 +105,11 @@ export default function PhotoGallery() {
 
   if (!data.photos) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <Card className="w-full max-w-md shadow-lg animate-in fade-in-0 zoom-in-95 duration-500">
           <CardContent className="pt-6">
             <p className="text-center text-lg">{data.message || 'Photos not ready yet'}</p>
-            <Button onClick={() => router.push('/')} className="w-full mt-4">
+            <Button onClick={() => router.push('/')} className="w-full mt-4 transition-all duration-200 hover:scale-105">
               Back to Login
             </Button>
           </CardContent>
@@ -89,30 +119,34 @@ export default function PhotoGallery() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Your Photos</h1>
-          <div className="space-x-2">
-            <Button onClick={downloadAll}>Download All</Button>
-            <Button variant="outline" onClick={() => router.push('/')}>Logout</Button>
+    <div className="min-h-screen bg-gray-50 p-4 transition-all duration-300">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <h1 className="text-2xl font-bold animate-in slide-in-from-left-4 duration-500">Your Photos</h1>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button onClick={downloadAll} className="transition-all duration-200 hover:scale-105 active:scale-95" disabled={downloading}>
+              {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {downloading ? 'Downloading...' : 'Download All'}
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/')} className="transition-all duration-200 hover:scale-105 active:scale-95">Logout</Button>
           </div>
+          {downloadProgress && <p className="text-sm text-gray-600 mt-2 col-span-full">{downloadProgress}</p>}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {data.photos.map((photo: Photo, index: number) => (
-            <Card key={index} className="relative group">
+            <Card key={index} className="relative group hover:shadow-lg transition-all duration-300 animate-in fade-in-0 slide-in-from-bottom-4" style={{ animationDelay: `${index * 100}ms` }}>
               <CardContent className="p-4">
                 <img
                   src={photo.url}
                   alt={photo.name}
-                  className="w-full h-48 object-cover rounded mb-2"
+                  className="w-full h-48 object-cover rounded mb-2 transition-transform duration-300 group-hover:scale-105"
                 />
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => handleDownload(photo)} className="bg-white rounded-full p-1 shadow hover:bg-gray-100">
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <button onClick={() => handleDownload(photo)} className="bg-white rounded-full p-1 shadow hover:bg-gray-100 transition-all duration-200 hover:scale-110">
                     <Download size={16} />
                   </button>
                 </div>
-                <p className="text-sm text-gray-600 mb-2">{photo.name}</p>
+                <p className="text-sm text-gray-600 mb-2 truncate">{photo.name}</p>
               </CardContent>
             </Card>
           ))}

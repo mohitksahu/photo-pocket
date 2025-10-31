@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AnimatePresence } from "framer-motion";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -27,7 +28,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
-        {children}
+        <AnimatePresence mode="wait">
+          {children}
+        </AnimatePresence>
         <footer className="mt-auto text-center py-4 text-gray-500 text-sm">
           made with love by fotofolks
         </footer>
