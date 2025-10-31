@@ -33,6 +33,10 @@ const config: runtime.GetPrismaClientConfig = {
         "fromEnvVar": null,
         "value": "windows",
         "native": true
+      },
+      {
+        "fromEnvVar": null,
+        "value": "rhel-openssl-3.0.x"
       }
     ],
     "previewFeatures": [],
@@ -46,6 +50,7 @@ const config: runtime.GetPrismaClientConfig = {
     "db"
   ],
   "activeProvider": "postgresql",
+  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {
@@ -54,8 +59,8 @@ const config: runtime.GetPrismaClientConfig = {
       }
     }
   },
-  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\n// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?\n// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init\n\ngenerator client {\n  provider = \"prisma-client\"\n  output   = \"../lib/generated\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel Student {\n  id            String   @id @default(cuid())\n  name          String\n  rollNo        String   @unique\n  password      String\n  paymentStatus String   @default(\"UNPAID\") // UNPAID, PAID\n  photoStatus   String   @default(\"Pending\") // Pending, Processing, Ready\n  createdAt     DateTime @default(now())\n  updatedAt     DateTime @updatedAt\n}\n",
-  "inlineSchemaHash": "ffa9f2ba63edd2838d229223f2e471e2a4943dbcd8ade2772795d615a7ed13e9",
+  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\n// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?\n// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init\n\ngenerator client {\n  provider      = \"prisma-client\"\n  binaryTargets = [\"native\", \"rhel-openssl-3.0.x\"]\n  output        = \"../lib/generated\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel Student {\n  id            String   @id @default(cuid())\n  name          String\n  rollNo        String   @unique\n  password      String\n  paymentStatus String   @default(\"UNPAID\") // UNPAID, PAID\n  photoStatus   String   @default(\"Pending\") // Pending, Processing, Ready\n  createdAt     DateTime @default(now())\n  updatedAt     DateTime @updatedAt\n}\n",
+  "inlineSchemaHash": "569a9dd38f221c044c95cf4bfcc49dc71be00ea92b7eac852d00f8ea023cfece",
   "copyEngine": true,
   "runtimeDataModel": {
     "models": {},
