@@ -46,6 +46,34 @@ export default function StudentPage() {
     { refreshInterval: 5000 }
   )
 
+  useEffect(() => {
+    // Check admin auth
+    const adminAuth = document.cookie.includes('admin-auth=true')
+    if (!adminAuth) {
+      router.push('/admin')
+      return
+    }
+
+    // Fetch student data
+    const fetchStudent = async () => {
+      try {
+        const res = await fetch(`/api/student/${id}`)
+        if (res.ok) {
+          const data = await res.json()
+          setStudent(data.student)
+        } else {
+          console.error('Failed to fetch student')
+        }
+      } catch (err) {
+        console.error('Error fetching student:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStudent()
+  }, [id, router])
+
   const generatePaymentQR = async () => {
     if (!student) return
     setGeneratingPaymentQR(true)
