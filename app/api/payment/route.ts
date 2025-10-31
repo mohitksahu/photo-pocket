@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
       data: {
         paymentStatus: 'PAID',
         password: hashedPassword,
+        plainPassword: plainPassword,
       }
     })
 

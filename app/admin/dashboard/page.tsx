@@ -17,6 +17,8 @@ interface Student {
 
 export default function AdminDashboard() {
   const [students, setStudents] = useState<Student[]>([])
+  const [studentsError, setStudentsError] = useState('')
+  const [studentsLoading, setStudentsLoading] = useState(true)
   const [name, setName] = useState('')
   const [rollNo, setRollNo] = useState('')
   const [registering, setRegistering] = useState(false)
@@ -33,12 +35,23 @@ export default function AdminDashboard() {
   }, [])
 
   const fetchStudents = async () => {
+    setStudentsLoading(true);
+    setStudentsError('');
     try {
       const res = await fetch('/api/students')
-      const data = await res.json()
-      setStudents(data.students)
+      if (!res.ok) {
+        setStudentsError('Failed to fetch students');
+        setStudents([]);
+        return;
+      }
+      const data = await res.json();
+      setStudents(data.students);
     } catch (err) {
-      console.error('Failed to fetch students')
+      setStudentsError('Failed to fetch students');
+      setStudents([]);
+      console.error('Failed to fetch students', err);
+    } finally {
+      setStudentsLoading(false);
     }
   }
 
@@ -128,26 +141,34 @@ export default function AdminDashboard() {
               <CardTitle>Students</CardTitle>
             </CardHeader>
             <CardContent>
-              <motion.div className="space-y-2" variants={containerVariants} initial="hidden" animate="visible">
-                {students.map((student, index) => (
-                  <motion.div
-                    key={student.id}
-                    variants={itemVariants}
-                    className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border rounded cursor-pointer hover:bg-gray-50 hover:shadow-md transition-all duration-300 animate-in fade-in-0 slide-in-from-left-4"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                    onClick={() => router.push(`/admin/student/${student.id}`)}
-                  >
-                    <div className="mb-2 sm:mb-0">
-                      <p className="font-medium">{student.name}</p>
-                      <p className="text-sm text-gray-600">Roll No: {student.rollNo}</p>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-sm">
-                      <span>Payment: <span className={student.paymentStatus === 'PAID' ? 'text-green-600' : 'text-red-600'}>{student.paymentStatus}</span></span>
-                      <span>Photos: <span className={student.photoStatus === 'Ready' ? 'text-green-600' : 'text-yellow-600'}>{student.photoStatus}</span></span>
-                    </div>
-                  </motion.div>
-                ))}
-              </motion.div>
+              {studentsLoading ? (
+                <div className="text-center py-8 text-gray-400">Loading students...</div>
+              ) : studentsError ? (
+                <div className="text-center py-8 text-red-500">{studentsError}</div>
+              ) : students.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">No students registered yet.</div>
+              ) : (
+                <motion.div className="space-y-2" variants={containerVariants} initial="hidden" animate="visible">
+                  {students.map((student, index) => (
+                    <motion.div
+                      key={student.id}
+                      variants={itemVariants}
+                      className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border rounded cursor-pointer hover:bg-gray-50 hover:shadow-md transition-all duration-300 animate-in fade-in-0 slide-in-from-left-4"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                      onClick={() => router.push(`/admin/student/${student.id}`)}
+                    >
+                      <div className="mb-2 sm:mb-0">
+                        <p className="font-medium">{student.name}</p>
+                        <p className="text-sm text-gray-600">Roll No: {student.rollNo}</p>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-sm">
+                        <span>Payment: <span className={student.paymentStatus === 'PAID' ? 'text-green-600' : 'text-red-600'}>{student.paymentStatus}</span></span>
+                        <span>Photos: <span className={student.photoStatus === 'Ready' ? 'text-green-600' : 'text-yellow-600'}>{student.photoStatus}</span></span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              )}
             </CardContent>
           </Card>
         </motion.div>

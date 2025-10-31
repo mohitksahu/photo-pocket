@@ -100,13 +100,44 @@ export default function StudentPage() {
       if (res.ok) {
         const data = await res.json()
         setPassword(data.password)
-        const loginText = `Fest Photo Portal: ${window.location.origin}\nUsername: ${student.rollNo}\nPassword: ${data.password}`
-        const qr = await QRCode.toDataURL(loginText)
+        // Create a URL that pre-fills the login form
+        const loginUrl = `${window.location.origin}?rollNo=${encodeURIComponent(student.rollNo)}&password=${encodeURIComponent(data.password)}`
+        const qr = await QRCode.toDataURL(loginUrl)
         setLoginQR(qr)
-        // Student data doesn't change, no need to refetch
+        // Refetch student to update status
+        const studentRes = await fetch(`/api/student/${id}`)
+        if (studentRes.ok) {
+          const studentData = await studentRes.json()
+          setStudent(studentData.student)
+        }
       }
     } catch (err) {
       console.error('Failed to mark as paid')
+    } finally {
+      setMarkingPaid(false)
+    }
+  }
+
+  const generateLoginQR = async () => {
+    if (!student) return
+    setMarkingPaid(true)
+    try {
+      // Fetch the plain password from the database
+      const res = await fetch(`/api/student/${id}`)
+      if (res.ok) {
+        const data = await res.json()
+        const plainPassword = data.student.plainPassword
+        if (!plainPassword) {
+          alert('Password not available. Please mark as paid first.')
+          return
+        }
+        const loginUrl = `${window.location.origin}?rollNo=${encodeURIComponent(student.rollNo)}&password=${encodeURIComponent(plainPassword)}`
+        const qr = await QRCode.toDataURL(loginUrl)
+        setLoginQR(qr)
+        setPassword(plainPassword) // Set in state for display
+      }
+    } catch (err) {
+      console.error('Failed to generate login QR')
     } finally {
       setMarkingPaid(false)
     }
@@ -224,60 +255,78 @@ export default function StudentPage() {
                   <Button onClick={generatePaymentQR} disabled={generatingPaymentQR} className="transition-all duration-200 hover:scale-105 active:scale-95">
                     {generatingPaymentQR ? 'Generating...' : 'Generate Payment QR'}
                   </Button>
-                  {paymentQR && <img src={paymentQR} alt="Payment QR" className="max-w-xs mx-auto animate-in zoom-in-95 duration-300" />}
+                  {generatingPaymentQR ? (
+                    <div className="text-center text-gray-400">Generating QR...</div>
+                  ) : paymentQR ? (
+                    <img src={paymentQR} alt="Payment QR" className="max-w-xs mx-auto animate-in zoom-in-95 duration-300" />
+                  ) : (
+                    <div className="text-center text-gray-400">No QR generated yet.</div>
+                  )}
+                  <Button onClick={markAsPaid} disabled={markingPaid} className="transition-all duration-200 hover:scale-105 active:scale-95">
+                    {markingPaid ? 'Processing...' : 'Mark as Paid'}
+                  </Button>
                 </div>
               )}
 
               {student.paymentStatus === 'PAID' && (
                 <div className="space-y-2 animate-in fade-in-0 duration-500 delay-400">
-                  <Button onClick={markAsPaid} disabled={markingPaid} className="transition-all duration-200 hover:scale-105 active:scale-95">
+                  <Button onClick={generateLoginQR} disabled={markingPaid} className="transition-all duration-200 hover:scale-105 active:scale-95">
                     {markingPaid ? 'Generating...' : 'Generate Login QR'}
                   </Button>
-                  {loginQR && <img src={loginQR} alt="Login QR" className="max-w-xs mx-auto animate-in zoom-in-95 duration-300" />}
+                  {markingPaid ? (
+                    <div className="text-center text-gray-400">Generating QR...</div>
+                  ) : loginQR ? (
+                    <img src={loginQR} alt="Login QR" className="max-w-xs mx-auto animate-in zoom-in-95 duration-300" />
+                  ) : (
+                    <div className="text-center text-gray-400">No QR generated yet.</div>
+                  )}
                   {password && <p className="animate-in slide-in-from-bottom-4 duration-300 delay-600"><strong>Password:</strong> {password}</p>}
                 </div>
               )}
             </CardContent>
           </Card>
 
-          <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-200">
-            <CardHeader>
-              <CardTitle>Photo Management</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="animate-in slide-in-from-right-4 duration-500 delay-400">
-                <Input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  disabled={uploading}
-                  className="transition-all duration-200 focus:scale-105"
-                />
-                {uploading && <p className="animate-in fade-in-0 duration-300">Uploading...</p>}
-              </div>
+          {student.paymentStatus === 'PAID' && (
+            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-200">
+              <CardHeader>
+                <CardTitle>Photo Management</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="animate-in slide-in-from-right-4 duration-500 delay-400">
+                  <Input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    disabled={uploading}
+                    className="transition-all duration-200 focus:scale-105"
+                  />
+                  {uploading && <p className="animate-in fade-in-0 duration-300">Uploading...</p>}
+                </div>
 
-              <div className="animate-in slide-in-from-right-4 duration-500 delay-600">
-                <label className="block text-sm font-medium mb-2">Photo Status</label>
-                <select
-                  value={student.photoStatus}
-                  onChange={(e) => updatePhotoStatus(e.target.value)}
-                  className="w-full p-2 border rounded transition-all duration-200 focus:scale-105"
-                >
-                  <option value="Pending">Pending</option>
-                  <option value="Processing">Processing</option>
-                  <option value="Ready">Ready</option>
-                </select>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="animate-in slide-in-from-right-4 duration-500 delay-600">
+                  <label className="block text-sm font-medium mb-2">Photo Status</label>
+                  <select
+                    value={student.photoStatus}
+                    onChange={(e) => updatePhotoStatus(e.target.value)}
+                    className="w-full p-2 border rounded transition-all duration-200 focus:scale-105"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Processing">Processing</option>
+                    <option value="Ready">Ready</option>
+                  </select>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
-        <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-400">
-          <CardHeader>
-            <CardTitle>Photos ({photosData?.photos?.length || 0})</CardTitle>
-          </CardHeader>
-          <CardContent>
+        {student.paymentStatus === 'PAID' && (
+          <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-400">
+            <CardHeader>
+              <CardTitle>Photos ({photosData?.photos?.length || 0})</CardTitle>
+            </CardHeader>
+            <CardContent>
             <motion.div
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
               initial="hidden"
@@ -321,6 +370,7 @@ export default function StudentPage() {
             </motion.div>
           </CardContent>
         </Card>
+        )}
       </div>
     </div>
   )

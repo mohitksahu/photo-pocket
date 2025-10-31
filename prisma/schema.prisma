@@ -19,6 +19,7 @@ model Student {
   name          String
   rollNo        String   @unique
   password      String
+  plainPassword String?
   paymentStatus String   @default("UNPAID") // UNPAID, PAID
   photoStatus   String   @default("Pending") // Pending, Processing, Ready
   createdAt     DateTime @default(now())

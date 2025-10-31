@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,6 +12,18 @@ export default function StudentLoginForm() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+
+  // Pre-fill form from URL parameters (for QR code login)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const rollNoParam = urlParams.get('rollNo')
+      const passwordParam = urlParams.get('password')
+      
+      if (rollNoParam) setRollNo(rollNoParam)
+      if (passwordParam) setPassword(passwordParam)
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
