@@ -33,6 +33,8 @@ export default function StudentPage() {
   const [loginQR, setLoginQR] = useState('')
   const [password, setPassword] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState('')
+  const [paymentAmount, setPaymentAmount] = useState('20')
   const [generatingPaymentQR, setGeneratingPaymentQR] = useState(false)
   const [markingPaid, setMarkingPaid] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -77,7 +79,7 @@ export default function StudentPage() {
   const generatePaymentQR = async () => {
     if (!student) return
     setGeneratingPaymentQR(true)
-    const upiLink = `upi://pay?pa=${process.env.NEXT_PUBLIC_UPI_ID || 'your_upi_id@bank'}&pn=Fest%20Photos&tr=${student.rollNo}&am=50.00`
+    const upiLink = `upi://pay?pa=${process.env.NEXT_PUBLIC_UPI_ID || 'your_upi_id@bank'}&pn=Fest%20Photos&tr=${student.rollNo}&am=${paymentAmount}.00`
     try {
       const qr = await QRCode.toDataURL(upiLink)
       setPaymentQR(qr)
@@ -128,7 +130,9 @@ export default function StudentPage() {
         const data = await res.json()
         const plainPassword = data.student.plainPassword
         if (!plainPassword) {
-          alert('Password not available. Please mark as paid first.')
+          console.error('Password not available for student:', student.rollNo)
+          // For now, show an error message instead of trying to regenerate
+          alert('Password not available. The student may need to be marked as paid again.')
           return
         }
         const loginUrl = `${window.location.origin}?rollNo=${encodeURIComponent(student.rollNo)}&password=${encodeURIComponent(plainPassword)}`
@@ -137,7 +141,7 @@ export default function StudentPage() {
         setPassword(plainPassword) // Set in state for display
       }
     } catch (err) {
-      console.error('Failed to generate login QR')
+      console.error('Failed to generate login QR:', err)
     } finally {
       setMarkingPaid(false)
     }
@@ -148,38 +152,77 @@ export default function StudentPage() {
     if (!files || !student) return
 
     setUploading(true)
+    setUploadProgress('')
+    const uploadResults = []
+    let successCount = 0
+
     try {
-      // Get auth params
-      const authRes = await fetch('/api/imagekit-auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rollNo: student.rollNo })
-      })
-      const auth = await authRes.json()
+      // Upload each file with fresh auth params
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        setUploadProgress(`Uploading ${i + 1}/${files.length}: ${file.name}...`)
 
-      for (const file of Array.from(files)) {
-        const formData = new FormData()
-        formData.append('file', file)
-        formData.append('fileName', file.name)
-        formData.append('folder', auth.folder)
-        formData.append('signature', auth.signature)
-        formData.append('expire', auth.expire.toString())
-        formData.append('token', auth.token)
-        formData.append('publicKey', process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY!)
-        formData.append('useUniqueFileName', 'false')
+        try {
+          // Get fresh auth params for each file
+          const authRes = await fetch('/api/imagekit-auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rollNo: student.rollNo })
+          })
+          const auth = await authRes.json()
 
-        await fetch('https://upload.imagekit.io/api/v1/files/upload', {
-          method: 'POST',
-          body: formData
-        })
+          const formData = new FormData()
+          formData.append('file', file)
+          formData.append('fileName', file.name)
+          formData.append('folder', auth.folder)
+          formData.append('signature', auth.signature)
+          formData.append('expire', auth.expire.toString())
+          formData.append('token', auth.token)
+          formData.append('publicKey', process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY!)
+
+          const uploadRes = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
+            method: 'POST',
+            body: formData
+          })
+
+          if (uploadRes.ok) {
+            const uploadData = await uploadRes.json()
+            uploadResults.push({ file: file.name, success: true, data: uploadData })
+            successCount++
+          } else {
+            const errorData = await uploadRes.json()
+            uploadResults.push({ file: file.name, success: false, error: errorData })
+            console.error(`Failed to upload ${file.name}:`, errorData)
+          }
+        } catch (fileError) {
+          uploadResults.push({ file: file.name, success: false, error: fileError })
+          console.error(`Error uploading ${file.name}:`, fileError)
+        }
       }
-      alert('Photos uploaded successfully')
-      mutate(`/api/admin/gallery/${student.rollNo}`)
+
+      setUploadProgress('')
+
+      // Show results
+      if (successCount === files.length) {
+        alert(`All ${successCount} photos uploaded successfully!`)
+      } else if (successCount > 0) {
+        alert(`${successCount} out of ${files.length} photos uploaded successfully. Check console for details.`)
+      } else {
+        alert('Failed to upload any photos. Check console for details.')
+      }
+
+      // Refresh the gallery if any uploads succeeded
+      if (successCount > 0) {
+        mutate(`/api/admin/gallery/${student.rollNo}`)
+      }
     } catch (err) {
-      console.error('Upload failed')
-      alert('Upload failed')
+      console.error('Upload setup failed:', err)
+      alert('Failed to setup upload. Please try again.')
     } finally {
       setUploading(false)
+      setUploadProgress('')
+      // Clear the file input
+      e.target.value = ''
     }
   }
 
@@ -200,6 +243,22 @@ export default function StudentPage() {
     }
   }
 
+  const refreshData = async () => {
+    if (!student) return
+    try {
+      // Refetch student data
+      const studentRes = await fetch(`/api/student/${id}`)
+      if (studentRes.ok) {
+        const studentData = await studentRes.json()
+        setStudent(studentData.student)
+      }
+      // Refetch photos
+      mutate(`/api/admin/gallery/${student.rollNo}`)
+    } catch (err) {
+      console.error('Failed to refresh data')
+    }
+  }
+
   const updatePhotoStatus = async (status: string) => {
     if (!student) return
     try {
@@ -208,7 +267,8 @@ export default function StudentPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rollNo: student.rollNo, status })
       })
-      // No need to refetch student, status is local
+      // Update local state to reflect the change immediately
+      setStudent({ ...student, photoStatus: status })
     } catch (err) {
       console.error('Failed to update status')
     }
@@ -231,6 +291,9 @@ export default function StudentPage() {
             <Button variant="outline" onClick={() => router.push('/admin/dashboard')} className="transition-all duration-200 hover:scale-105 active:scale-95">
               Back to Dashboard
             </Button>
+            <Button variant="outline" onClick={refreshData} className="transition-all duration-200 hover:scale-105 active:scale-95">
+              Refresh Data
+            </Button>
             <Button onClick={() => { document.cookie = 'admin-auth=; path=/; max-age=0'; router.push('/admin') }} className="transition-all duration-200 hover:scale-105 active:scale-95">
               Logout
             </Button>
@@ -252,13 +315,24 @@ export default function StudentPage() {
 
               {student.paymentStatus === 'UNPAID' && (
                 <div className="space-y-2 animate-in fade-in-0 duration-500 delay-400">
+                  <div className="flex flex-col gap-2">
+                    <label className="block text-sm font-medium">Payment Amount</label>
+                    <select
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      className="w-full p-2 border rounded transition-all duration-200 focus:scale-105"
+                    >
+                      <option value="20">₹20</option>
+                      <option value="25">₹25</option>
+                    </select>
+                  </div>
                   <Button onClick={generatePaymentQR} disabled={generatingPaymentQR} className="transition-all duration-200 hover:scale-105 active:scale-95">
-                    {generatingPaymentQR ? 'Generating...' : 'Generate Payment QR'}
+                    {generatingPaymentQR ? 'Generating...' : `Generate ₹${paymentAmount} Payment QR`}
                   </Button>
                   {generatingPaymentQR ? (
                     <div className="text-center text-gray-400">Generating QR...</div>
                   ) : paymentQR ? (
-                    <img src={paymentQR} alt="Payment QR" className="max-w-xs mx-auto animate-in zoom-in-95 duration-300" />
+                    <img src={paymentQR} alt={`Payment QR for ₹${paymentAmount}`} className="max-w-xs mx-auto animate-in zoom-in-95 duration-300" />
                   ) : (
                     <div className="text-center text-gray-400">No QR generated yet.</div>
                   )}
@@ -301,7 +375,7 @@ export default function StudentPage() {
                     disabled={uploading}
                     className="transition-all duration-200 focus:scale-105"
                   />
-                  {uploading && <p className="animate-in fade-in-0 duration-300">Uploading...</p>}
+                  {uploading && <p className="animate-in fade-in-0 duration-300">{uploadProgress || 'Uploading...'}</p>}
                 </div>
 
                 <div className="animate-in slide-in-from-right-4 duration-500 delay-600">

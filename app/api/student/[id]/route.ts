@@ -15,7 +15,8 @@ export async function GET(
         name: true,
         rollNo: true,
         paymentStatus: true,
-        photoStatus: true
+        photoStatus: true,
+        plainPassword: true
       }
     })
 
