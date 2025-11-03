@@ -22,6 +22,7 @@ export default function AdminDashboard() {
   const [name, setName] = useState('')
   const [rollNo, setRollNo] = useState('')
   const [registering, setRegistering] = useState(false)
+  const [rollNoError, setRollNoError] = useState('')
   const router = useRouter()
 
   useEffect(() => {
@@ -55,21 +56,69 @@ export default function AdminDashboard() {
     }
   }
 
+  const validateRollNo = (rollNo: string): boolean => {
+    // Check if exactly 9 characters
+    if (rollNo.length !== 9) {
+      setRollNoError('Roll number must be exactly 9 characters long');
+      return false;
+    }
+
+    // Check if contains only numbers
+    if (!/^\d+$/.test(rollNo)) {
+      setRollNoError('Roll number must contain only numbers');
+      return false;
+    }
+
+    // Check if starts with valid year (2022-2025)
+    const validYears = ['2022', '2023', '2024', '2025'];
+    const yearPrefix = rollNo.substring(0, 4);
+    if (!validYears.includes(yearPrefix)) {
+      setRollNoError('Roll number must start with a valid year (2022-2025)');
+      return false;
+    }
+
+    setRollNoError('');
+    return true;
+  }
+
+  const handleRollNoChange = (value: string) => {
+    setRollNo(value);
+    if (value) {
+      validateRollNo(value);
+    } else {
+      setRollNoError('');
+    }
+  }
+
   const registerStudent = async () => {
+    if (!name.trim()) {
+      alert('Please enter a name');
+      return;
+    }
+
+    if (!validateRollNo(rollNo)) {
+      return;
+    }
+
     setRegistering(true)
     try {
       const res = await fetch('/api/student', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, rollNo })
+        body: JSON.stringify({ name: name.trim(), rollNo })
       })
       if (res.ok) {
         setName('')
         setRollNo('')
+        setRollNoError('')
         fetchStudents()
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to register student');
       }
     } catch (err) {
       console.error('Failed to register')
+      alert('Failed to register student')
     } finally {
       setRegistering(false)
     }
@@ -124,11 +173,14 @@ export default function AdminDashboard() {
                   className="transition-all duration-200 focus:scale-105"
                 />
                 <Input
-                  placeholder="Roll No"
+                  placeholder="Roll No (2025XXXXX)"
                   value={rollNo}
-                  onChange={(e) => setRollNo(e.target.value)}
-                  className="transition-all duration-200 focus:scale-105"
+                  onChange={(e) => handleRollNoChange(e.target.value)}
+                  className={`transition-all duration-200 focus:scale-105 ${rollNoError ? 'border-red-500' : ''}`}
                 />
+                {rollNoError && (
+                  <p className="text-red-500 text-sm mt-1">{rollNoError}</p>
+                )}
                 <Button onClick={registerStudent} disabled={registering} className="transition-all duration-200 hover:scale-105 active:scale-95">
                   {registering ? 'Registering...' : 'Register'}
                 </Button>
