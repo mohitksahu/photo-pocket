@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AnimatePresence } from "framer-motion";
 import CosmicBackground from "@/components/CosmicBackground";
+import LoadingPreloader from "@/components/LoadingPreloader";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,6 +32,7 @@ export default function RootLayout({
         style={{ background: '#0A0A0A', color: '#EDEDED', fontFamily: 'Poppins, Segoe UI, Arial, sans-serif' }}
       >
         <div id="cosmic-bg"></div>
+        <LoadingPreloader />
         <CosmicBackground />
         <AnimatePresence mode="wait">
           {children}
