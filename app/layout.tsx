@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { AnimatePresence } from "framer-motion";
 import CosmicBackground from "@/components/CosmicBackground";
 import LoadingPreloader from "@/components/LoadingPreloader";
+import { RouteChangeProvider } from "@/components/RouteChangeProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -33,10 +34,12 @@ export default function RootLayout({
       >
         <div id="cosmic-bg"></div>
         <LoadingPreloader />
-        <CosmicBackground />
-        <AnimatePresence mode="wait">
-          {children}
-        </AnimatePresence>
+        <RouteChangeProvider>
+          <CosmicBackground />
+          <AnimatePresence mode="wait">
+            {children}
+          </AnimatePresence>
+        </RouteChangeProvider>
         <footer className="mt-auto text-center py-4 text-gray-500 text-sm">
           made with love by fotofolks
         </footer>

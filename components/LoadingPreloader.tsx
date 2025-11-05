@@ -1,34 +1,35 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { addRouteChangeListener } from './RouteChangeProvider';
 
 export default function LoadingPreloader() {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Hide preloader after initial page load
-    const handleLoad = () => {
+    // Show preloader on initial mount
+    setIsLoading(true);
+    const initialTimeout = setTimeout(() => {
       setIsLoading(false);
-    };
+    }, 1500);
 
-    // Use a combination of window load and a timeout to ensure preloader shows briefly
-    const timeout = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000); // Show for at least 1 second
-
-    window.addEventListener('load', handleLoad);
-
-    return () => {
-      window.removeEventListener('load', handleLoad);
-      clearTimeout(timeout);
-    };
+    return () => clearTimeout(initialTimeout);
   }, []);
 
-  if (!isLoading) return null;
+  useEffect(() => {
+    // Listen to route changes
+    const unsubscribe = addRouteChangeListener((isChanging: boolean) => {
+      setIsLoading(isChanging);
+    });
+
+    return unsubscribe;
+  }, []);
 
   return (
     <div 
-      className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
+      className={`fixed inset-0 flex items-center justify-center z-50 transition-opacity duration-300 ${
+        isLoading ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+      }`}
       style={{ background: '#0A0A0A' }}
     >
       <video
