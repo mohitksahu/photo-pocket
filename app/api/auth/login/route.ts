@@ -4,14 +4,14 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
-    const { rollNo, password } = await request.json()
+    const { phoneNumber, password } = await request.json()
 
-    if (!rollNo || !password) {
-      return NextResponse.json({ error: 'Roll No and password are required' }, { status: 400 })
+    if (!phoneNumber || !password) {
+      return NextResponse.json({ error: 'Phone Number and password are required' }, { status: 400 })
     }
 
     const student = await prisma.student.findUnique({
-      where: { rollNo }
+      where: { phoneNumber }
     })
 
     if (!student || student.paymentStatus !== 'PAID') {
@@ -23,11 +23,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }
 
-    await setAuthCookie(rollNo)
+    await setAuthCookie(phoneNumber)
 
     return NextResponse.json({ message: 'Login successful' })
   } catch (error) {
-    console.error(error)
+    console.error('Login error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

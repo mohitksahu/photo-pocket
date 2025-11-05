@@ -17,11 +17,13 @@ datasource db {
 model Student {
   id            String   @id @default(cuid())
   name          String
-  rollNo        String   @unique
+  phoneNumber   String   @unique
   password      String
   plainPassword String?
   paymentStatus String   @default("UNPAID") // UNPAID, PAID
   photoStatus   String   @default("Pending") // Pending, Processing, Ready
+  polaroidQuantity Int    @default(0)
+  albumQuantity    Int    @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }

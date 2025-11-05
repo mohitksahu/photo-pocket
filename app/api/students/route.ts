@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         name: true,
-        rollNo: true,
+        phoneNumber: true,
         paymentStatus: true,
         photoStatus: true
       }

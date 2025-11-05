@@ -12,28 +12,28 @@ export async function comparePassword(password: string, hashed: string): Promise
   return bcrypt.compare(password, hashed)
 }
 
-export function signJWT(payload: { rollNo: string }): string {
+export function signJWT(payload: { phoneNumber: string }): string {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' })
 }
 
-export function verifyJWT(token: string): { rollNo: string } | null {
+export function verifyJWT(token: string): { phoneNumber: string } | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as { rollNo: string }
+    return jwt.verify(token, JWT_SECRET) as { phoneNumber: string }
   } catch {
     return null
   }
 }
 
-export async function getStudentFromCookie(): Promise<{ rollNo: string } | null> {
+export async function getStudentFromCookie(): Promise<{ phoneNumber: string } | null> {
   const cookieStore = await cookies()
   const token = cookieStore.get('auth-token')?.value
   if (!token) return null
   return verifyJWT(token)
 }
 
-export async function setAuthCookie(rollNo: string) {
+export async function setAuthCookie(phoneNumber: string) {
   const cookieStore = await cookies()
-  const token = signJWT({ rollNo })
+  const token = signJWT({ phoneNumber })
   cookieStore.set('auth-token', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',

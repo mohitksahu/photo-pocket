@@ -5,14 +5,14 @@ import { generatePassword } from '@/lib/utils'
 
 export async function POST(request: NextRequest) {
   try {
-    const { rollNo } = await request.json()
+    const { phoneNumber, polaroidQuantity, albumQuantity } = await request.json()
 
-    if (!rollNo) {
-      return NextResponse.json({ error: 'rollNo is required' }, { status: 400 })
+    if (!phoneNumber) {
+      return NextResponse.json({ error: 'phoneNumber is required' }, { status: 400 })
     }
 
     const student = await prisma.student.findUnique({
-      where: { rollNo }
+      where: { phoneNumber }
     })
 
     if (!student) {
@@ -27,12 +27,14 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await hashPassword(plainPassword)
 
     await prisma.student.update({
-      where: { rollNo },
-      data: {
+      where: { phoneNumber },
+      data: ({
         paymentStatus: 'PAID',
         password: hashedPassword,
         plainPassword: plainPassword,
-      }
+        ...(polaroidQuantity !== undefined ? { polaroidQuantity: polaroidQuantity } : {}),
+        ...(albumQuantity !== undefined ? { albumQuantity: albumQuantity } : {}),
+      } as any)
     })
 
     return NextResponse.json({ password: plainPassword })

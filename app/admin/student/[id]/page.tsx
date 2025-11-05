@@ -14,7 +14,7 @@ import useSWR, { mutate } from 'swr'
 interface Student {
   id: string
   name: string
-  rollNo: string
+  phoneNumber: string
   paymentStatus: string
   photoStatus: string
 }
@@ -34,7 +34,8 @@ export default function StudentPage() {
   const [password, setPassword] = useState('')
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState('')
-  const [paymentAmount, setPaymentAmount] = useState('20')
+  const [polaroidQuantity, setPolaroidQuantity] = useState(0)
+  const [albumQuantity, setAlbumQuantity] = useState(0)
   const [generatingPaymentQR, setGeneratingPaymentQR] = useState(false)
   const [markingPaid, setMarkingPaid] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -43,7 +44,7 @@ export default function StudentPage() {
   const id = params.id as string
 
   const { data: photosData, error: photosError, isLoading: photosLoading } = useSWR(
-    student ? `/api/admin/gallery/${student.rollNo}` : null,
+    student ? `/api/admin/gallery/${student.phoneNumber}` : null,
     fetcher,
     { refreshInterval: 5000 }
   )
@@ -79,7 +80,8 @@ export default function StudentPage() {
   const generatePaymentQR = async () => {
     if (!student) return
     setGeneratingPaymentQR(true)
-    const upiLink = `upi://pay?pa=${process.env.NEXT_PUBLIC_UPI_ID || 'your_upi_id@bank'}&pn=Fest%20Photos&tr=${student.rollNo}&am=${paymentAmount}.00`
+    const totalAmount = (polaroidQuantity * 20) + (albumQuantity * 25)
+    const upiLink = `upi://pay?pa=${process.env.NEXT_PUBLIC_UPI_ID || 'your_upi_id@bank'}&pn=Fest%20Photos&tr=${student.phoneNumber}&am=${totalAmount}.00`
     try {
       const qr = await QRCode.toDataURL(upiLink)
       setPaymentQR(qr)
@@ -97,13 +99,17 @@ export default function StudentPage() {
       const res = await fetch('/api/payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rollNo: student.rollNo })
+        body: JSON.stringify({ 
+          phoneNumber: student.phoneNumber,
+          polaroidQuantity,
+          albumQuantity
+        })
       })
       if (res.ok) {
         const data = await res.json()
         setPassword(data.password)
         // Create a URL that pre-fills the login form
-        const loginUrl = `${window.location.origin}?rollNo=${encodeURIComponent(student.rollNo)}&password=${encodeURIComponent(data.password)}`
+        const loginUrl = `${window.location.origin}?phoneNumber=${encodeURIComponent(student.phoneNumber)}&password=${encodeURIComponent(data.password)}`
         const qr = await QRCode.toDataURL(loginUrl)
         setLoginQR(qr)
         // Refetch student to update status
@@ -130,12 +136,12 @@ export default function StudentPage() {
         const data = await res.json()
         const plainPassword = data.student.plainPassword
         if (!plainPassword) {
-          console.error('Password not available for student:', student.rollNo)
+          console.error('Password not available for student:', student.phoneNumber)
           // For now, show an error message instead of trying to regenerate
           alert('Password not available. The student may need to be marked as paid again.')
           return
         }
-        const loginUrl = `${window.location.origin}?rollNo=${encodeURIComponent(student.rollNo)}&password=${encodeURIComponent(plainPassword)}`
+        const loginUrl = `${window.location.origin}?phoneNumber=${encodeURIComponent(student.phoneNumber)}&password=${encodeURIComponent(plainPassword)}`
         const qr = await QRCode.toDataURL(loginUrl)
         setLoginQR(qr)
         setPassword(plainPassword) // Set in state for display
@@ -151,25 +157,71 @@ export default function StudentPage() {
     const files = e.target.files
     if (!files || !student) return
 
+    // Validate files before upload
+    const validFiles = []
+    const invalidFiles = []
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        invalidFiles.push(`${file.name}: Not an image file`)
+        continue
+      }
+      
+      // Check file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        invalidFiles.push(`${file.name}: File too large (max 10MB)`)
+        continue
+      }
+      
+      validFiles.push(file)
+    }
+
+    if (invalidFiles.length > 0) {
+      alert(`Some files were rejected:\n${invalidFiles.join('\n')}`)
+    }
+
+    if (validFiles.length === 0) {
+      alert('No valid files to upload')
+      return
+    }
+
     setUploading(true)
     setUploadProgress('')
     const uploadResults = []
     let successCount = 0
 
     try {
-      // Upload each file with fresh auth params
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i]
-        setUploadProgress(`Uploading ${i + 1}/${files.length}: ${file.name}...`)
+      // Upload each valid file with fresh auth params
+      for (let i = 0; i < validFiles.length; i++) {
+        const file = validFiles[i]
+        setUploadProgress(`Uploading ${i + 1}/${validFiles.length}: ${file.name}...`)
 
         try {
           // Get fresh auth params for each file
           const authRes = await fetch('/api/imagekit-auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ rollNo: student.rollNo })
+            body: JSON.stringify({ phoneNumber: student.phoneNumber })
           })
+          
+          if (!authRes.ok) {
+            const authError = await authRes.json()
+            console.error('Failed to get auth params:', authError)
+            uploadResults.push({ file: file.name, success: false, error: { message: 'Failed to get upload authentication' } })
+            continue
+          }
+          
           const auth = await authRes.json()
+          
+          // Validate auth params
+          if (!auth.signature || !auth.token || !auth.expire) {
+            console.error('Invalid auth params:', auth)
+            uploadResults.push({ file: file.name, success: false, error: { message: 'Invalid upload authentication parameters' } })
+            continue
+          }
 
           const formData = new FormData()
           formData.append('file', file)
@@ -185,14 +237,40 @@ export default function StudentPage() {
             body: formData
           })
 
+          console.log(`Upload response for ${file.name}:`, {
+            status: uploadRes.status,
+            statusText: uploadRes.statusText,
+            headers: Object.fromEntries(uploadRes.headers.entries())
+          })
+
           if (uploadRes.ok) {
             const uploadData = await uploadRes.json()
             uploadResults.push({ file: file.name, success: true, data: uploadData })
             successCount++
           } else {
-            const errorData = await uploadRes.json()
+            let errorData = {}
+            try {
+              errorData = await uploadRes.json()
+            } catch (jsonError) {
+              // If JSON parsing fails, create a custom error object
+              errorData = { 
+                message: `HTTP ${uploadRes.status}: ${uploadRes.statusText}`,
+                status: uploadRes.status,
+                statusText: uploadRes.statusText
+              }
+            }
             uploadResults.push({ file: file.name, success: false, error: errorData })
-            console.error(`Failed to upload ${file.name}:`, errorData)
+            console.error(`Failed to upload ${file.name}:`, {
+              status: uploadRes.status,
+              statusText: uploadRes.statusText,
+              errorData,
+              auth: {
+                folder: auth.folder,
+                expire: auth.expire,
+                hasSignature: !!auth.signature,
+                hasToken: !!auth.token
+              }
+            })
           }
         } catch (fileError) {
           uploadResults.push({ file: file.name, success: false, error: fileError })
@@ -203,17 +281,21 @@ export default function StudentPage() {
       setUploadProgress('')
 
       // Show results
-      if (successCount === files.length) {
+      if (successCount === validFiles.length) {
         alert(`All ${successCount} photos uploaded successfully!`)
+        // Automatically set photo status to Ready after successful upload
+        await updatePhotoStatus('Ready')
       } else if (successCount > 0) {
-        alert(`${successCount} out of ${files.length} photos uploaded successfully. Check console for details.`)
+        alert(`${successCount} out of ${validFiles.length} photos uploaded successfully. Check console for details.`)
+        // Automatically set photo status to Ready if at least one photo was uploaded
+        await updatePhotoStatus('Ready')
       } else {
         alert('Failed to upload any photos. Check console for details.')
       }
 
       // Refresh the gallery if any uploads succeeded
       if (successCount > 0) {
-        mutate(`/api/admin/gallery/${student.rollNo}`)
+        mutate(`/api/admin/gallery/${student.phoneNumber}`)
       }
     } catch (err) {
       console.error('Upload setup failed:', err)
@@ -233,7 +315,7 @@ export default function StudentPage() {
         method: 'DELETE'
       })
       if (res.ok) {
-        mutate(`/api/admin/gallery/${student!.rollNo}`)
+        mutate(`/api/admin/gallery/${student!.phoneNumber}`)
       } else {
         alert('Failed to delete photo')
       }
@@ -253,7 +335,7 @@ export default function StudentPage() {
         setStudent(studentData.student)
       }
       // Refetch photos
-      mutate(`/api/admin/gallery/${student.rollNo}`)
+      mutate(`/api/admin/gallery/${student.phoneNumber}`)
     } catch (err) {
       console.error('Failed to refresh data')
     }
@@ -265,7 +347,7 @@ export default function StudentPage() {
       await fetch('/api/student/status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rollNo: student.rollNo, status })
+        body: JSON.stringify({ phoneNumber: student.phoneNumber, status })
       })
       // Update local state to reflect the change immediately
       setStudent({ ...student, photoStatus: status })
@@ -286,7 +368,7 @@ export default function StudentPage() {
     <div className="min-h-screen bg-gray-50 p-4 transition-all duration-300">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-          <h1 className="text-2xl font-bold animate-in slide-in-from-left-4 duration-500">{student.name} - {student.rollNo}</h1>
+          <h1 className="text-2xl font-bold animate-in slide-in-from-left-4 duration-500">{student.name} - {student.phoneNumber}</h1>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button variant="outline" onClick={() => router.push('/admin/dashboard')} className="transition-all duration-200 hover:scale-105 active:scale-95">
               Back to Dashboard
@@ -308,34 +390,56 @@ export default function StudentPage() {
             <CardContent className="space-y-4">
               <div className="animate-in slide-in-from-left-4 duration-500 delay-200">
                 <p><strong>Name:</strong> {student.name}</p>
-                <p><strong>Roll No:</strong> {student.rollNo}</p>
+                <p><strong>Phone Number:</strong> {student.phoneNumber}</p>
                 <p><strong>Payment Status:</strong> <Badge variant={student.paymentStatus === 'PAID' ? 'default' : 'secondary'} className="transition-all duration-300">{student.paymentStatus}</Badge></p>
                 <p><strong>Photo Status:</strong> <Badge variant={student.photoStatus === 'Ready' ? 'default' : 'secondary'} className="transition-all duration-300">{student.photoStatus}</Badge></p>
               </div>
 
-              {student.paymentStatus === 'UNPAID' && (
-                <div className="space-y-2 animate-in fade-in-0 duration-500 delay-400">
+              {/* Payment QR Generation - Always Available */}
+              <div className="space-y-2 animate-in fade-in-0 duration-500 delay-400">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-2">
-                    <label className="block text-sm font-medium">Payment Amount</label>
+                    <label className="block text-sm font-medium">Polaroid Prints (₹20 each)</label>
                     <select
-                      value={paymentAmount}
-                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      value={polaroidQuantity}
+                      onChange={(e) => setPolaroidQuantity(Number(e.target.value))}
                       className="w-full p-2 border rounded transition-all duration-200 focus:scale-105"
                     >
-                      <option value="20">₹20</option>
-                      <option value="25">₹25</option>
+                      {Array.from({ length: 11 }, (_, i) => (
+                        <option key={i} value={i}>{i}</option>
+                      ))}
                     </select>
                   </div>
-                  <Button onClick={generatePaymentQR} disabled={generatingPaymentQR} className="transition-all duration-200 hover:scale-105 active:scale-95">
-                    {generatingPaymentQR ? 'Generating...' : `Generate ₹${paymentAmount} Payment QR`}
-                  </Button>
-                  {generatingPaymentQR ? (
-                    <div className="text-center text-gray-400">Generating QR...</div>
-                  ) : paymentQR ? (
-                    <img src={paymentQR} alt={`Payment QR for ₹${paymentAmount}`} className="max-w-xs mx-auto animate-in zoom-in-95 duration-300" />
-                  ) : (
-                    <div className="text-center text-gray-400">No QR generated yet.</div>
-                  )}
+                  <div className="flex flex-col gap-2">
+                    <label className="block text-sm font-medium">Album Prints (₹25 each)</label>
+                    <select
+                      value={albumQuantity}
+                      onChange={(e) => setAlbumQuantity(Number(e.target.value))}
+                      className="w-full p-2 border rounded transition-all duration-200 focus:scale-105"
+                    >
+                      {Array.from({ length: 11 }, (_, i) => (
+                        <option key={i} value={i}>{i}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="text-center font-semibold">
+                  Total: ₹{(polaroidQuantity * 20) + (albumQuantity * 25)}
+                </div>
+                <Button onClick={generatePaymentQR} disabled={generatingPaymentQR || (polaroidQuantity === 0 && albumQuantity === 0)} className="transition-all duration-200 hover:scale-105 active:scale-95">
+                  {generatingPaymentQR ? 'Generating...' : `Generate ₹${(polaroidQuantity * 20) + (albumQuantity * 25)} Payment QR`}
+                </Button>
+                {generatingPaymentQR ? (
+                  <div className="text-center text-gray-400">Generating QR...</div>
+                ) : paymentQR ? (
+                  <img src={paymentQR} alt={`Payment QR for ₹${(polaroidQuantity * 20) + (albumQuantity * 25)}`} className="max-w-xs mx-auto animate-in zoom-in-95 duration-300" />
+                ) : (
+                  <div className="text-center text-gray-400">No QR generated yet.</div>
+                )}
+              </div>
+
+              {student.paymentStatus === 'UNPAID' && (
+                <div className="space-y-2 animate-in fade-in-0 duration-500 delay-400">
                   <Button onClick={markAsPaid} disabled={markingPaid} className="transition-all duration-200 hover:scale-105 active:scale-95">
                     {markingPaid ? 'Processing...' : 'Mark as Paid'}
                   </Button>

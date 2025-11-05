@@ -5,19 +5,19 @@ import { hashPassword } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, rollNo } = await request.json()
+    const { name, phoneNumber } = await request.json()
 
-    if (!name || !rollNo) {
-      return NextResponse.json({ error: 'Name and rollNo are required' }, { status: 400 })
+    if (!name || !phoneNumber) {
+      return NextResponse.json({ error: 'Name and phoneNumber are required' }, { status: 400 })
     }
 
     // Check if student already exists
     const existing = await prisma.student.findUnique({
-      where: { rollNo }
+      where: { phoneNumber }
     })
 
     if (existing) {
-      return NextResponse.json({ error: 'Student with this rollNo already exists' }, { status: 400 })
+      return NextResponse.json({ error: 'Student with this phoneNumber already exists' }, { status: 400 })
     }
 
     const password = generatePassword()
@@ -26,14 +26,14 @@ export async function POST(request: NextRequest) {
     const student = await prisma.student.create({
       data: {
         name,
-        rollNo,
+        phoneNumber,
         password: hashedPassword,
         paymentStatus: 'UNPAID',
         photoStatus: 'Pending',
       }
     })
 
-    return NextResponse.json({ student: { id: student.id, name: student.name, rollNo: student.rollNo, paymentStatus: student.paymentStatus, password } })
+    return NextResponse.json({ student: { id: student.id, name: student.name, phoneNumber: student.phoneNumber, paymentStatus: student.paymentStatus, password } })
   } catch (error) {
     console.error(error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

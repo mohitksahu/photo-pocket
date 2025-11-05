@@ -10,7 +10,7 @@ import { motion } from 'framer-motion'
 interface Student {
   id: string
   name: string
-  rollNo: string
+  phoneNumber: string
   paymentStatus: string
   photoStatus: string
 }
@@ -20,9 +20,11 @@ export default function AdminDashboard() {
   const [studentsError, setStudentsError] = useState('')
   const [studentsLoading, setStudentsLoading] = useState(true)
   const [name, setName] = useState('')
-  const [rollNo, setRollNo] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState('')
   const [registering, setRegistering] = useState(false)
-  const [rollNoError, setRollNoError] = useState('')
+  const [phoneNumberError, setPhoneNumberError] = useState('')
+  const [checking, setChecking] = useState(false)
+  const [checkMessage, setCheckMessage] = useState('')
   const router = useRouter()
 
   useEffect(() => {
@@ -56,48 +58,70 @@ export default function AdminDashboard() {
     }
   }
 
-  const validateRollNo = (rollNo: string): boolean => {
-    // Check if exactly 9 characters
-    if (rollNo.length !== 9) {
-      setRollNoError('Roll number must be exactly 9 characters long');
-      return false;
+  // Validate that we have exactly 10 digits
+  const validatePhoneNumber = (phoneNumber: string): boolean => {
+    const digits = phoneNumber.replace(/\D/g, '').replace(/^91/, '')
+    if (digits.length !== 10) {
+      setPhoneNumberError('Phone number must be 10 digits')
+      return false
     }
-
-    // Check if contains only numbers
-    if (!/^\d+$/.test(rollNo)) {
-      setRollNoError('Roll number must contain only numbers');
-      return false;
-    }
-
-    // Check if starts with valid year (2022-2025)
-    const validYears = ['2022', '2023', '2024', '2025'];
-    const yearPrefix = rollNo.substring(0, 4);
-    if (!validYears.includes(yearPrefix)) {
-      setRollNoError('Roll number must start with a valid year (2022-2025)');
-      return false;
-    }
-
-    setRollNoError('');
-    return true;
+    setPhoneNumberError('')
+    return true
   }
 
-  const handleRollNoChange = (value: string) => {
-    setRollNo(value);
+  // Normalize to E.164-like: +91XXXXXXXXXX (no spaces) for storage/lookup
+  const normalizePhoneNumber = (input: string): string => {
+    const digits = input.replace(/\D/g, '')
+    const last10 = digits.slice(-10)
+    if (last10.length === 10) return `+91${last10}`
+    return input.trim()
+  }
+
+  const handlePhoneNumberChange = (value: string) => {
+    setPhoneNumber(value)
     if (value) {
-      validateRollNo(value);
+      validatePhoneNumber(value)
     } else {
-      setRollNoError('');
+      setPhoneNumberError('')
+    }
+    // Clear check message when changing
+    setCheckMessage('')
+  }
+
+  const checkPhoneNumber = async () => {
+    if (!phoneNumber || !validatePhoneNumber(phoneNumber)) {
+      return
+    }
+    setChecking(true)
+    setCheckMessage('')
+    try {
+      const normalized = normalizePhoneNumber(phoneNumber)
+      const res = await fetch('/api/student/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: normalized })
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setCheckMessage(data.message)
+      } else {
+        setCheckMessage('Error checking phone number')
+      }
+    } catch (err) {
+      setCheckMessage('Error checking phone number')
+    } finally {
+      setChecking(false)
     }
   }
 
   const registerStudent = async () => {
     if (!name.trim()) {
-      alert('Please enter a name');
-      return;
+      alert('Please enter a name')
+      return
     }
 
-    if (!validateRollNo(rollNo)) {
-      return;
+    if (!validatePhoneNumber(phoneNumber)) {
+      return
     }
 
     setRegistering(true)
@@ -105,16 +129,16 @@ export default function AdminDashboard() {
       const res = await fetch('/api/student', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), rollNo })
+        body: JSON.stringify({ name: name.trim(), phoneNumber: normalizePhoneNumber(phoneNumber) })
       })
       if (res.ok) {
         setName('')
-        setRollNo('')
-        setRollNoError('')
+        setPhoneNumber('')
+        setPhoneNumberError('')
         fetchStudents()
       } else {
-        const data = await res.json();
-        alert(data.error || 'Failed to register student');
+        const data = await res.json()
+        alert(data.error || 'Failed to register student')
       }
     } catch (err) {
       console.error('Failed to register')
@@ -173,17 +197,27 @@ export default function AdminDashboard() {
                   className="transition-all duration-200 focus:scale-105"
                 />
                 <Input
-                  placeholder="Roll No (2025XXXXX)"
-                  value={rollNo}
-                  onChange={(e) => handleRollNoChange(e.target.value)}
-                  className={`transition-all duration-200 focus:scale-105 ${rollNoError ? 'border-red-500' : ''}`}
+                  placeholder="Phone Number"
+                  value={phoneNumber}
+                  onChange={(e) => handlePhoneNumberChange(e.target.value)}
+                  className={`transition-all duration-200 focus:scale-105 ${phoneNumberError ? 'border-red-500' : ''}`}
                 />
-                {rollNoError && (
-                  <p className="text-red-500 text-sm mt-1">{rollNoError}</p>
+                {phoneNumberError && (
+                  <p className="text-red-500 text-sm mt-1">{phoneNumberError}</p>
                 )}
-                <Button onClick={registerStudent} disabled={registering} className="transition-all duration-200 hover:scale-105 active:scale-95">
-                  {registering ? 'Registering...' : 'Register'}
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <Button onClick={checkPhoneNumber} disabled={checking || !phoneNumber || !!phoneNumberError} variant="outline" className="transition-all duration-200 hover:scale-105 active:scale-95">
+                      {checking ? 'Checking...' : 'Check'}
+                    </Button>
+                    <Button onClick={registerStudent} disabled={registering} className="transition-all duration-200 hover:scale-105 active:scale-95">
+                      {registering ? 'Registering...' : 'Register'}
+                    </Button>
+                  </div>
+                  {checkMessage && (
+                    <p className={`text-sm mt-1 ${checkMessage.includes('already') ? 'text-red-500' : 'text-green-500'}`}>{checkMessage}</p>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -211,7 +245,7 @@ export default function AdminDashboard() {
                     >
                       <div className="mb-2 sm:mb-0">
                         <p className="font-medium">{student.name}</p>
-                        <p className="text-sm text-gray-600">Roll No: {student.rollNo}</p>
+                        <p className="text-sm text-gray-600">Phone: {student.phoneNumber}</p>
                       </div>
                       <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-sm">
                         <span>Payment: <span className={student.paymentStatus === 'PAID' ? 'text-green-600' : 'text-red-600'}>{student.paymentStatus}</span></span>

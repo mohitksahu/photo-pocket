@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function StudentLoginForm() {
-  const [rollNo, setRollNo] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -17,10 +17,10 @@ export default function StudentLoginForm() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search)
-      const rollNoParam = urlParams.get('rollNo')
+      const phoneNumberParam = urlParams.get('phoneNumber')
       const passwordParam = urlParams.get('password')
       
-      if (rollNoParam) setRollNo(rollNoParam)
+      if (phoneNumberParam) setPhoneNumber(phoneNumberParam)
       if (passwordParam) setPassword(passwordParam)
     }
   }, [])
@@ -34,7 +34,7 @@ export default function StudentLoginForm() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rollNo, password })
+        body: JSON.stringify({ phoneNumber, password })
       })
 
       if (res.ok) {
@@ -60,14 +60,14 @@ export default function StudentLoginForm() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="animate-in slide-in-from-left-4 duration-500 delay-300">
-              <label htmlFor="rollNo" className="block text-sm font-medium mb-1">Roll No</label>
+              <label htmlFor="phoneNumber" className="block text-sm font-medium mb-1">Phone Number</label>
               <Input
-                id="rollNo"
+                id="phoneNumber"
                 type="text"
-                value={rollNo}
-                onChange={(e) => setRollNo(e.target.value)}
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
                 required
-                placeholder="Enter your roll number"
+                placeholder="Enter your phone number"
                 className="transition-all duration-200 focus:scale-105"
               />
             </div>

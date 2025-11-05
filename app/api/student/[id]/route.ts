@@ -13,7 +13,7 @@ export async function GET(
       select: {
         id: true,
         name: true,
-        rollNo: true,
+        phoneNumber: true,
         paymentStatus: true,
         photoStatus: true,
         plainPassword: true

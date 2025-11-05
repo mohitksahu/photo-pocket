@@ -3,14 +3,14 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
-    const { rollNo, status } = await request.json()
+    const { phoneNumber, status } = await request.json()
 
-    if (!rollNo || !status) {
-      return NextResponse.json({ error: 'rollNo and status are required' }, { status: 400 })
+    if (!phoneNumber || !status) {
+      return NextResponse.json({ error: 'phoneNumber and status are required' }, { status: 400 })
     }
 
     await prisma.student.update({
-      where: { rollNo },
+      where: { phoneNumber },
       data: { photoStatus: status }
     })
 
