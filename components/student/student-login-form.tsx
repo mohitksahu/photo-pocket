@@ -51,16 +51,16 @@ export default function StudentLoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4 transition-all duration-300">
-      <Card className="w-full max-w-md shadow-lg hover:shadow-xl transition-shadow duration-300 animate-in fade-in-0 zoom-in-95 duration-500">
+    <div className="min-h-screen flex items-center justify-center p-4 transition-all duration-300" style={{ background: '#0A0A0A' }}>
+      <Card className="w-full max-w-md shadow-lg hover:shadow-xl transition-shadow duration-300 animate-in fade-in-0 zoom-in-95 duration-500 cosmic-card border-2 border-orange-500">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold mb-2 animate-in slide-in-from-top-4 duration-700">Sankalp presents</CardTitle>
-          <CardTitle className="text-xl animate-in slide-in-from-bottom-4 duration-700 delay-200">PhotoPocket 3.0</CardTitle>
+          <CardTitle className="text-2xl font-bold mb-2 animate-in slide-in-from-top-4 duration-700" style={{ color: '#FF9A00', textShadow: '0 0 8px #FF9A00' }}>Sankalp presents</CardTitle>
+          <CardTitle className="text-3xl animate-in slide-in-from-bottom-4 duration-700 delay-200" style={{ color: '#FF9A00', textShadow: '0 0 12px #FF9A00' }}>PhotoPocket 3.0</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="animate-in slide-in-from-left-4 duration-500 delay-300">
-              <label htmlFor="phoneNumber" className="block text-sm font-medium mb-1">Phone Number</label>
+              <label htmlFor="phoneNumber" className="block text-sm font-medium mb-1 text-soft-white">Phone Number</label>
               <Input
                 id="phoneNumber"
                 type="text"
@@ -68,11 +68,11 @@ export default function StudentLoginForm() {
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 required
                 placeholder="Enter your phone number"
-                className="transition-all duration-200 focus:scale-105"
+                className="transition-all duration-200 focus:scale-105 bg-[#1A1A1A] border-orange-500 text-soft-white placeholder-gray-500"
               />
             </div>
             <div className="animate-in slide-in-from-right-4 duration-500 delay-500">
-              <label htmlFor="password" className="block text-sm font-medium mb-1">Password</label>
+              <label htmlFor="password" className="block text-sm font-medium mb-1 text-soft-white">Password</label>
               <Input
                 id="password"
                 type="password"
@@ -80,11 +80,11 @@ export default function StudentLoginForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 placeholder="Enter your password"
-                className="transition-all duration-200 focus:scale-105"
+                className="transition-all duration-200 focus:scale-105 bg-[#1A1A1A] border-orange-500 text-soft-white placeholder-gray-500"
               />
             </div>
             {error && <p className="text-red-500 text-sm animate-in fade-in-0 duration-300">{error}</p>}
-            <Button type="submit" className="w-full transition-all duration-200 hover:scale-105 active:scale-95" disabled={loading}>
+            <Button type="submit" className="w-full transition-all duration-200 hover:scale-105 active:scale-95 cosmic-btn" disabled={loading}>
               {loading ? 'Logging in...' : 'Login'}
             </Button>
           </form>

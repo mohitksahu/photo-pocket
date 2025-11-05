@@ -51,7 +51,11 @@ function Button({
   return (
     <Comp
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(
+        variant === "default" ? "cosmic-btn" : "",
+        variant === "outline" ? "border border-orange-500 text-orange-400 bg-[#0E0E0E] hover:bg-orange-900/20" : "",
+        buttonVariants({ variant, size, className })
+      )}
       {...props}
     />
   )

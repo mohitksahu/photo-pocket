@@ -169,12 +169,13 @@ export default function AdminDashboard() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="min-h-screen bg-gray-50 p-4"
+      className="min-h-screen p-4"
+      style={{ background: '#0A0A0A' }}
     >
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <Button onClick={() => { document.cookie = 'admin-auth=; path=/; max-age=0'; router.push('/admin') }}>
+          <h1 className="text-2xl font-bold" style={{ color: '#FF9A00', textShadow: '0 0 8px #FF9A00' }}>Admin Dashboard</h1>
+          <Button onClick={() => { document.cookie = 'admin-auth=; path=/; max-age=0'; router.push('/admin') }} className="cosmic-btn">
             Logout
           </Button>
         </div>
@@ -184,9 +185,9 @@ export default function AdminDashboard() {
           initial="hidden"
           animate="visible"
         >
-          <Card className="mb-6 shadow-lg hover:shadow-xl transition-shadow duration-300 animate-in fade-in-0 slide-in-from-top-4 duration-500">
+          <Card className="mb-6 shadow-lg hover:shadow-xl transition-shadow duration-300 animate-in fade-in-0 slide-in-from-top-4 duration-500 cosmic-card border border-orange-500">
             <CardHeader>
-              <CardTitle>Register New Student</CardTitle>
+              <CardTitle style={{ color: '#FF9A00' }}>Register New Student</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col sm:flex-row gap-4">
@@ -194,23 +195,23 @@ export default function AdminDashboard() {
                   placeholder="Name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="transition-all duration-200 focus:scale-105"
+                  className="transition-all duration-200 focus:scale-105 bg-[#1A1A1A] border-orange-500 text-soft-white placeholder-gray-500"
                 />
                 <Input
                   placeholder="Phone Number"
                   value={phoneNumber}
                   onChange={(e) => handlePhoneNumberChange(e.target.value)}
-                  className={`transition-all duration-200 focus:scale-105 ${phoneNumberError ? 'border-red-500' : ''}`}
+                  className={`transition-all duration-200 focus:scale-105 bg-[#1A1A1A] border-orange-500 text-soft-white placeholder-gray-500 ${phoneNumberError ? 'border-red-500' : ''}`}
                 />
                 {phoneNumberError && (
                   <p className="text-red-500 text-sm mt-1">{phoneNumberError}</p>
                 )}
                 <div className="flex flex-col gap-2">
                   <div className="flex gap-2">
-                    <Button onClick={checkPhoneNumber} disabled={checking || !phoneNumber || !!phoneNumberError} variant="outline" className="transition-all duration-200 hover:scale-105 active:scale-95">
+                    <Button onClick={checkPhoneNumber} disabled={checking || !phoneNumber || !!phoneNumberError} variant="outline" className="transition-all duration-200 hover:scale-105 active:scale-95 border-orange-500 text-orange-400">
                       {checking ? 'Checking...' : 'Check'}
                     </Button>
-                    <Button onClick={registerStudent} disabled={registering} className="transition-all duration-200 hover:scale-105 active:scale-95">
+                    <Button onClick={registerStudent} disabled={registering} className="transition-all duration-200 hover:scale-105 active:scale-95 cosmic-btn">
                       {registering ? 'Registering...' : 'Register'}
                     </Button>
                   </div>
@@ -222,9 +223,9 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-200">
+          <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-200 cosmic-card border border-orange-500">
             <CardHeader>
-              <CardTitle>Students</CardTitle>
+              <CardTitle style={{ color: '#FF9A00' }}>Students</CardTitle>
             </CardHeader>
             <CardContent>
               {studentsLoading ? (
@@ -239,17 +240,17 @@ export default function AdminDashboard() {
                     <motion.div
                       key={student.id}
                       variants={itemVariants}
-                      className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border rounded cursor-pointer hover:bg-gray-50 hover:shadow-md transition-all duration-300 animate-in fade-in-0 slide-in-from-left-4"
+                      className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border border-orange-500 rounded cursor-pointer hover:bg-orange-900/10 hover:shadow-md transition-all duration-300 animate-in fade-in-0 slide-in-from-left-4 bg-[#1A1A1A]"
                       style={{ animationDelay: `${index * 50}ms` }}
                       onClick={() => router.push(`/admin/student/${student.id}`)}
                     >
                       <div className="mb-2 sm:mb-0">
-                        <p className="font-medium">{student.name}</p>
-                        <p className="text-sm text-gray-600">Phone: {student.phoneNumber}</p>
+                        <p className="font-medium text-soft-white">{student.name}</p>
+                        <p className="text-sm text-gray-400">Phone: {student.phoneNumber}</p>
                       </div>
                       <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-sm">
-                        <span>Payment: <span className={student.paymentStatus === 'PAID' ? 'text-green-600' : 'text-red-600'}>{student.paymentStatus}</span></span>
-                        <span>Photos: <span className={student.photoStatus === 'Ready' ? 'text-green-600' : 'text-yellow-600'}>{student.photoStatus}</span></span>
+                        <span className="text-soft-white">Payment: <span className={student.paymentStatus === 'PAID' ? 'text-green-400' : 'text-red-400'}>{student.paymentStatus}</span></span>
+                        <span className="text-soft-white">Photos: <span className={student.photoStatus === 'Ready' ? 'text-green-400' : 'text-yellow-400'}>{student.photoStatus}</span></span>
                       </div>
                     </motion.div>
                   ))}

@@ -365,45 +365,65 @@ export default function StudentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 transition-all duration-300">
+    <div className="min-h-screen p-4 transition-all duration-300" style={{ background: '#0A0A0A' }}>
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-          <h1 className="text-2xl font-bold animate-in slide-in-from-left-4 duration-500">{student.name} - {student.phoneNumber}</h1>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-bold animate-in slide-in-from-left-4 duration-500" style={{ color: '#FF9A00', textShadow: '0 0 8px #FF9A00' }}>{student.name}</h1>
+            <p className="text-gray-400 text-sm mt-1">{student.phoneNumber}</p>
+          </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={() => router.push('/admin/dashboard')} className="transition-all duration-200 hover:scale-105 active:scale-95">
+            <Button variant="outline" onClick={() => router.push('/admin/dashboard')} className="transition-all duration-200 hover:scale-105 active:scale-95 border-orange-500 text-orange-400 bg-[#0E0E0E] hover:bg-orange-900/20">
               Back to Dashboard
             </Button>
-            <Button variant="outline" onClick={refreshData} className="transition-all duration-200 hover:scale-105 active:scale-95">
+            <Button variant="outline" onClick={refreshData} className="transition-all duration-200 hover:scale-105 active:scale-95 border-orange-500 text-orange-400 bg-[#0E0E0E] hover:bg-orange-900/20">
               Refresh Data
             </Button>
-            <Button onClick={() => { document.cookie = 'admin-auth=; path=/; max-age=0'; router.push('/admin') }} className="transition-all duration-200 hover:scale-105 active:scale-95">
+            <Button onClick={() => { document.cookie = 'admin-auth=; path=/; max-age=0'; router.push('/admin') }} className="transition-all duration-200 hover:scale-105 active:scale-95 cosmic-btn">
               Logout
             </Button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
+          <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 animate-in fade-in-0 slide-in-from-bottom-4 duration-500 cosmic-card border border-orange-500">
             <CardHeader>
-              <CardTitle>Student Details</CardTitle>
+              <CardTitle style={{ color: '#FF9A00' }}>Student Details</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="animate-in slide-in-from-left-4 duration-500 delay-200">
-                <p><strong>Name:</strong> {student.name}</p>
-                <p><strong>Phone Number:</strong> {student.phoneNumber}</p>
-                <p><strong>Payment Status:</strong> <Badge variant={student.paymentStatus === 'PAID' ? 'default' : 'secondary'} className="transition-all duration-300">{student.paymentStatus}</Badge></p>
-                <p><strong>Photo Status:</strong> <Badge variant={student.photoStatus === 'Ready' ? 'default' : 'secondary'} className="transition-all duration-300">{student.photoStatus}</Badge></p>
+            <CardContent className="space-y-6">
+              <div className="animate-in slide-in-from-left-4 duration-500 delay-200 space-y-3">
+                <div className="flex justify-between items-center pb-3 border-b border-orange-500/30">
+                  <span className="text-gray-400">Name:</span>
+                  <span className="text-soft-white font-medium">{student.name}</span>
+                </div>
+                <div className="flex justify-between items-center pb-3 border-b border-orange-500/30">
+                  <span className="text-gray-400">Phone Number:</span>
+                  <span className="text-soft-white font-medium">{student.phoneNumber}</span>
+                </div>
+                <div className="flex justify-between items-center pb-3 border-b border-orange-500/30">
+                  <span className="text-gray-400">Payment Status:</span>
+                  <Badge className={student.paymentStatus === 'PAID' ? 'bg-green-900/50 text-green-400' : 'bg-red-900/50 text-red-400'}>
+                    {student.paymentStatus}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400">Photo Status:</span>
+                  <Badge className={student.photoStatus === 'Ready' ? 'bg-green-900/50 text-green-400' : 'bg-yellow-900/50 text-yellow-400'}>
+                    {student.photoStatus}
+                  </Badge>
+                </div>
               </div>
 
               {/* Payment QR Generation - Always Available */}
-              <div className="space-y-2 animate-in fade-in-0 duration-500 delay-400">
+              <div className="space-y-4 animate-in fade-in-0 duration-500 delay-400 border-t border-orange-500/30 pt-6">
+                <h3 className="text-orange-400 font-semibold">Payment Options</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-2">
-                    <label className="block text-sm font-medium">Polaroid Prints (₹20 each)</label>
+                    <label className="block text-sm font-medium text-gray-300">Polaroid Prints (₹20 each)</label>
                     <select
                       value={polaroidQuantity}
                       onChange={(e) => setPolaroidQuantity(Number(e.target.value))}
-                      className="w-full p-2 border rounded transition-all duration-200 focus:scale-105"
+                      className="w-full p-2 border border-orange-500 rounded bg-[#1A1A1A] text-soft-white transition-all duration-200 focus:ring-2 focus:ring-orange-500/50"
                     >
                       {Array.from({ length: 11 }, (_, i) => (
                         <option key={i} value={i}>{i}</option>
@@ -411,11 +431,11 @@ export default function StudentPage() {
                     </select>
                   </div>
                   <div className="flex flex-col gap-2">
-                    <label className="block text-sm font-medium">Album Prints (₹25 each)</label>
+                    <label className="block text-sm font-medium text-gray-300">Album Prints (₹25 each)</label>
                     <select
                       value={albumQuantity}
                       onChange={(e) => setAlbumQuantity(Number(e.target.value))}
-                      className="w-full p-2 border rounded transition-all duration-200 focus:scale-105"
+                      className="w-full p-2 border border-orange-500 rounded bg-[#1A1A1A] text-soft-white transition-all duration-200 focus:ring-2 focus:ring-orange-500/50"
                     >
                       {Array.from({ length: 11 }, (_, i) => (
                         <option key={i} value={i}>{i}</option>
@@ -423,10 +443,11 @@ export default function StudentPage() {
                     </select>
                   </div>
                 </div>
-                <div className="text-center font-semibold">
-                  Total: ₹{(polaroidQuantity * 20) + (albumQuantity * 25)}
+                <div className="bg-orange-500/10 border border-orange-500/30 rounded p-4 text-center">
+                  <div className="text-gray-400 text-sm mb-1">Total Amount:</div>
+                  <div className="text-2xl font-bold text-orange-400">₹{(polaroidQuantity * 20) + (albumQuantity * 25)}</div>
                 </div>
-                <Button onClick={generatePaymentQR} disabled={generatingPaymentQR || (polaroidQuantity === 0 && albumQuantity === 0)} className="transition-all duration-200 hover:scale-105 active:scale-95">
+                <Button onClick={generatePaymentQR} disabled={generatingPaymentQR || (polaroidQuantity === 0 && albumQuantity === 0)} className="w-full cosmic-btn">
                   {generatingPaymentQR ? 'Generating...' : `Generate ₹${(polaroidQuantity * 20) + (albumQuantity * 25)} Payment QR`}
                 </Button>
                 {generatingPaymentQR ? (
@@ -439,55 +460,56 @@ export default function StudentPage() {
               </div>
 
               {student.paymentStatus === 'UNPAID' && (
-                <div className="space-y-2 animate-in fade-in-0 duration-500 delay-400">
-                  <Button onClick={markAsPaid} disabled={markingPaid} className="transition-all duration-200 hover:scale-105 active:scale-95">
+                <div className="space-y-2 animate-in fade-in-0 duration-500 delay-400 border-t border-orange-500/30 pt-6">
+                  <Button onClick={markAsPaid} disabled={markingPaid} className="w-full cosmic-btn">
                     {markingPaid ? 'Processing...' : 'Mark as Paid'}
                   </Button>
                 </div>
               )}
 
               {student.paymentStatus === 'PAID' && (
-                <div className="space-y-2 animate-in fade-in-0 duration-500 delay-400">
-                  <Button onClick={generateLoginQR} disabled={markingPaid} className="transition-all duration-200 hover:scale-105 active:scale-95">
+                <div className="space-y-4 animate-in fade-in-0 duration-500 delay-400 border-t border-orange-500/30 pt-6">
+                  <Button onClick={generateLoginQR} disabled={markingPaid} className="w-full cosmic-btn">
                     {markingPaid ? 'Generating...' : 'Generate Login QR'}
                   </Button>
                   {markingPaid ? (
                     <div className="text-center text-gray-400">Generating QR...</div>
                   ) : loginQR ? (
-                    <img src={loginQR} alt="Login QR" className="max-w-xs mx-auto animate-in zoom-in-95 duration-300" />
+                    <img src={loginQR} alt="Login QR" className="max-w-xs mx-auto animate-in zoom-in-95 duration-300 rounded border border-orange-500/30" />
                   ) : (
                     <div className="text-center text-gray-400">No QR generated yet.</div>
                   )}
-                  {password && <p className="animate-in slide-in-from-bottom-4 duration-300 delay-600"><strong>Password:</strong> {password}</p>}
+                  {password && <p className="animate-in slide-in-from-bottom-4 duration-300 delay-600 text-center bg-orange-500/10 border border-orange-500/30 rounded p-3"><span className="text-gray-400">Password: </span><span className="text-orange-400 font-semibold">{password}</span></p>}
                 </div>
               )}
             </CardContent>
           </Card>
 
           {student.paymentStatus === 'PAID' && (
-            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-200">
+            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-200 cosmic-card border border-orange-500">
               <CardHeader>
-                <CardTitle>Photo Management</CardTitle>
+                <CardTitle style={{ color: '#FF9A00' }}>Photo Management</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="animate-in slide-in-from-right-4 duration-500 delay-400">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Upload Photos</label>
                   <Input
                     type="file"
                     multiple
                     accept="image/*"
                     onChange={handleFileUpload}
                     disabled={uploading}
-                    className="transition-all duration-200 focus:scale-105"
+                    className="transition-all duration-200 focus:ring-2 focus:ring-orange-500/50 border-orange-500 bg-[#1A1A1A] text-soft-white"
                   />
-                  {uploading && <p className="animate-in fade-in-0 duration-300">{uploadProgress || 'Uploading...'}</p>}
+                  {uploading && <p className="animate-in fade-in-0 duration-300 text-orange-400 mt-2">{uploadProgress || 'Uploading...'}</p>}
                 </div>
 
                 <div className="animate-in slide-in-from-right-4 duration-500 delay-600">
-                  <label className="block text-sm font-medium mb-2">Photo Status</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Photo Status</label>
                   <select
                     value={student.photoStatus}
                     onChange={(e) => updatePhotoStatus(e.target.value)}
-                    className="w-full p-2 border rounded transition-all duration-200 focus:scale-105"
+                    className="w-full p-2 border border-orange-500 rounded bg-[#1A1A1A] text-soft-white transition-all duration-200 focus:ring-2 focus:ring-orange-500/50"
                   >
                     <option value="Pending">Pending</option>
                     <option value="Processing">Processing</option>
@@ -500,9 +522,9 @@ export default function StudentPage() {
         </div>
 
         {student.paymentStatus === 'PAID' && (
-          <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-400">
+          <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-400 cosmic-card border border-orange-500">
             <CardHeader>
-              <CardTitle>Photos ({photosData?.photos?.length || 0})</CardTitle>
+              <CardTitle style={{ color: '#FF9A00' }}>Photos ({photosData?.photos?.length || 0})</CardTitle>
             </CardHeader>
             <CardContent>
             <motion.div
