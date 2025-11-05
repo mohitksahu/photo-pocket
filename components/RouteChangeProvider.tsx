@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
 // Global state for route changes
 let routeChangeListeners: ((isChanging: boolean) => void)[] = [];
@@ -20,13 +21,13 @@ export function triggerRouteChange() {
   }, 800);
 }
 
-export function RouteChangeProvider({ children }: { children: React.ReactNode }) {
+function RouteChangeDetector({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const previousPathRef = useRef<string>('');
 
   useEffect(() => {
-    const currentPath = pathname + searchParams.toString();
+    const currentPath = pathname + (searchParams ? searchParams.toString() : '');
     
     if (previousPathRef.current !== currentPath && previousPathRef.current !== '') {
       triggerRouteChange();
@@ -36,4 +37,12 @@ export function RouteChangeProvider({ children }: { children: React.ReactNode })
   }, [pathname, searchParams]);
 
   return children;
+}
+
+export function RouteChangeProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={null}>
+      <RouteChangeDetector>{children}</RouteChangeDetector>
+    </Suspense>
+  );
 }
