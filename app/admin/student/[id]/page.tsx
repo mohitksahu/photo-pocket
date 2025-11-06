@@ -170,12 +170,6 @@ export default function StudentPage() {
         continue
       }
       
-      // Check file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        invalidFiles.push(`${file.name}: File too large (max 10MB)`)
-        continue
-      }
-      
       validFiles.push(file)
     }
 
